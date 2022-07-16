@@ -1,16 +1,15 @@
+use crate::commons;
+use crate::entity;
 use bracket_lib::prelude::*;
-pub mod player;
-use player::Player;
-
-
-const SCREEN_WIDTH: i32 = 80;
-const SCREEN_HEIGHT: i32 = 50;
-const FRAME_DURATION: f32 = 75.0;
+use entity::obstacle::Obstacle;
+pub use entity::player::Player;
 
 pub struct State {
     player: Player,
     frame_time: f32,
     mode: GameMode,
+    obstacle: Obstacle,
+    score: i32,
 }
 
 enum GameMode {
@@ -22,26 +21,37 @@ enum GameMode {
 impl State {
     pub fn new() -> Self {
         State {
-            mode: GameMode::Menu,
             frame_time: 0.0,
-            player: Player::new(5, 25),
+            player: Player::new(10, 10),
+            obstacle: Obstacle::new(commons::SCREEN_WIDTH, 0),
+            mode: GameMode::Menu,
+            score: 0,
         }
     }
 
     fn play(&mut self, ctx: &mut BTerm) {
-        ctx.cls_bg(NAVY);
+        ctx.cls_bg(WHITE);
         self.frame_time += ctx.frame_time_ms;
-        if self.frame_time > FRAME_DURATION {
+        if self.frame_time > crate::commons::FRAME_DURATION {
             self.frame_time = 0.0;
+
             self.player.gravity_and_move();
         }
         if let Some(VirtualKeyCode::Space) = ctx.key {
             self.player.flap();
         }
         self.player.render(ctx);
-        ctx.print(0, 0, "Press Space to Fly");
-        if self.player.y > SCREEN_HEIGHT {
-            self.mode = GameMode::End
+        ctx.print(0, 0, "Press SPACE to flap.");
+        ctx.print(0, 1, &format!("Score: {}", self.score));
+
+        self.obstacle.render(ctx, self.player.x);
+        if self.player.x > self.obstacle.x {
+            self.score += 1;
+            self.obstacle = Obstacle::new(self.player.x + crate::commons::SCREEN_WIDTH, self.score);
+        }
+        if self.player.y as i32 > crate::commons::SCREEN_HEIGHT || self.obstacle.hit_obstacle(&self.player) 
+        {
+            self.mode = GameMode::End;
         }
     }
 
@@ -49,11 +59,15 @@ impl State {
         self.player = Player::new(5, 25);
         self.mode = GameMode::Playing;
         self.frame_time = 0.0;
+        self.obstacle = Obstacle::new(commons::SCREEN_WIDTH, 0);
+        self.mode = GameMode::Playing;
+        self.score = 0;
     }
 
     fn dead(&mut self, ctx: &mut BTerm) {
         ctx.cls();
         ctx.print_centered(5, "Oh No Skeleton you are dead! For sure this time... ");
+        ctx.print_centered(6, &format!("Final Score Skelly Boy: {}", self.score));
         ctx.print_centered(8, "(P) Play Again");
         ctx.print_centered(9, "(Q) Quit Game");
 
@@ -68,9 +82,9 @@ impl State {
 
     fn main_menu(&mut self, ctx: &mut BTerm) {
         ctx.cls();
-        ctx.print_centered(5, "Welcome to Flappy Skeleton");
-        ctx.print_centered(8, "(P) Play Game");
-        ctx.print_centered(9, "(Q) Quit Game");
+        ctx.print_color_centered(5, YELLOW, BLACK, "Welcome to Flappy Skeleton");
+        ctx.print_color_centered(8, CYAN, BLACK, "(P) Play Game");
+        ctx.print_color_centered(9, CYAN, BLACK, "(Q) Quit Game");
 
         if let Some(key) = ctx.key {
             match key {
