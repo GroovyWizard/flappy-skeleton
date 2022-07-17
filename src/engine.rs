@@ -30,7 +30,7 @@ impl State {
     }
 
     fn play(&mut self, ctx: &mut BTerm) {
-        ctx.cls_bg(WHITE);
+        ctx.cls_bg(BLACK);
         self.frame_time += ctx.frame_time_ms;
         if self.frame_time > crate::commons::FRAME_DURATION {
             self.frame_time = 0.0;

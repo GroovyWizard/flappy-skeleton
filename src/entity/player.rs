@@ -41,7 +41,7 @@ impl Player {
             Degrees::new(0.0),
             PointF::new(2.0, 2.0),
             WHITE,
-            WHITE,
+            BLACK,
             crate::commons::DRAGON_FRAMES[self.frame],
         );
         ctx.set_active_console(0);
